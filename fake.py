@@ -1,11 +1,17 @@
 import streamlit as st
-import joblib
 import tempfile
+
+try:
+    import joblib
+except ImportError:
+    joblib = None
 
 # -----------------------------
 # Helper Function
 # -----------------------------
 def try_load(path):
+    if joblib is None:
+        return None
     try:
         return joblib.load(path)
     except Exception:
@@ -33,6 +39,9 @@ st.write(
 
 st.divider()
 
+if joblib is None:
+    st.error("⚠️ The `joblib` library is missing from the environment. Please ensure `joblib` is in `requirements.txt` and reboot your Streamlit app.")
+
 # -----------------------------
 # Upload Model if Missing
 # -----------------------------
@@ -41,22 +50,24 @@ uploaded_vectorizer = None
 
 if model is None or vectorizer is None:
 
-    st.warning("Model or Vectorizer not found. Please upload the required .pkl files.")
+    st.warning("Model or Vectorizer not found. Please upload the required .pkl files below to use the detector.")
 
-    if model is None:
-        uploaded_model = st.file_uploader(
-            "Upload fake_email_model.pkl",
-            type=["pkl"]
-        )
-
-    if vectorizer is None:
-        uploaded_vectorizer = st.file_uploader(
-            "Upload tfidf_vectorizer.pkl",
-            type=["pkl"]
-        )
+    col1, col2 = st.columns(2)
+    with col1:
+        if model is None:
+            uploaded_model = st.file_uploader(
+                "Upload fake_email_model.pkl",
+                type=["pkl"]
+            )
+    with col2:
+        if vectorizer is None:
+            uploaded_vectorizer = st.file_uploader(
+                "Upload tfidf_vectorizer.pkl",
+                type=["pkl"]
+            )
 
 def load_uploaded(file):
-    if file is None:
+    if file is None or joblib is None:
         return None
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pkl") as tf:
@@ -114,4 +125,4 @@ if st.button("Detect Email"):
 
         else:
 
-            st.error("Model or Vectorizer not loaded.")
+            st.error("Model or Vectorizer not loaded. Please upload the model files above.")
